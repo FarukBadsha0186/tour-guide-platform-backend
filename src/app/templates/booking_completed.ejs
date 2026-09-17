@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Booking Confirmation</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+      .header {
+        text-align: center;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+      }
+      .header h1 {
+        color: #007bff;
+        font-size: 24px;
+        margin: 0;
+      }
+      .header h2 {
+        color: #28a745;
+        font-size: 18px;
+        margin: 10px 0 0 0;
+      }
+      .content p {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #333;
+      }
+      .details {
+        background: #f0f4ff;
+        padding: 20px;
+        border-radius: 6px;
+        margin: 20px 0;
+      }
+      .details-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed #ccc;
+        font-size: 14px;
+      }
+      .details-row:last-child {
+        border-bottom: none;
+      }
+      .details-row strong {
+        color: #555;
+      }
+      .footer {
+        margin-top: 30px;
+        font-size: 12px;
+        color: #888;
+        text-align: center;
+        border-top: 1px solid #eee;
+        padding-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Tour Guide Platform</h1>
+        <h2>✓ Booking Confirmation</h2>
+      </div>
+
+      <div class="content">
+        <p>Hello <strong><%= touristName %></strong>,</p>
+        <p>
+          Your tour booking has been <strong>successfully completed</strong>!
+          Thank you for choosing us. Please find your invoice attached.
+        </p>
+
+        <div class="details">
+          <div class="details-row">
+            <strong>Booking Reference:</strong>
+            <span><%= bookingReference %></span>
+          </div>
+          <div class="details-row">
+            <strong>Tour Date:</strong>
+            <span><%= tourDate %></span>
+          </div>
+          <div class="details-row">
+            <strong>Number of People:</strong>
+            <span><%= numberOfPeople %></span>
+          </div>
+          <div class="details-row">
+            <strong>Total Amount:</strong>
+            <span><%= totalAmount %></span>
+          </div>
+          <div class="details-row">
+            <strong>Status:</strong>
+            <span style="color: #28a745; font-weight: bold;">COMPLETED</span>
+          </div>
+        </div>
+
+        <p>We hope you had a wonderful experience! 🎉</p>
+      </div>
+
+      <div class="footer">
+        &copy; Tour Guide Platform. All rights reserved.
+      </div>
+    </div>
+  </body>
+</html>

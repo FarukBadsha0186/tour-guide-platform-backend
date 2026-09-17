@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "guides" ADD COLUMN     "totalBookings" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "totalEarnings" DOUBLE PRECISION NOT NULL DEFAULT 0;

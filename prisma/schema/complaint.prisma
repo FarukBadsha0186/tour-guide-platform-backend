@@ -1,0 +1,23 @@
+model Complaint {
+    id            String          @id @default(uuid())
+    bookingId     String          @unique
+    complainantId String
+    defendantId   String
+    title         String
+    description   String
+    status        ComplaintStatus @default(OPEN)
+    adminResponse String?
+    resolvedAt    DateTime?
+    createdAt     DateTime        @default(now())
+    updatedAt     DateTime        @updatedAt
+
+    booking     Booking @relation("BookingToComplaint", fields: [bookingId], references: [id])
+    complainant User    @relation("ComplainantComplaints", fields: [complainantId], references: [id])
+    defendant   User    @relation("DefendantComplaints", fields: [defendantId], references: [id])
+
+    @@index([bookingId])
+    @@index([complainantId])
+    @@index([defendantId])
+    @@index([status])
+    @@map("complaints")
+}

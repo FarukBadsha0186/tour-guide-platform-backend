@@ -1,0 +1,28 @@
+model TourPackage {
+    id             String        @id @default(uuid())
+    guideId        String
+    title          String
+    description    String
+    durationHours  Int
+    pricePerPerson Float
+    maxGroupSize   Int
+    minGroupSize   Int           @default(1)
+    itinerary      Json
+    inclusions     String[]
+    exclusions     String[]
+    meetingPoint   String?
+    status         PackageStatus @default(PENDING)
+    isDeleted      Boolean       @default(false)
+    deletedAt      DateTime?
+    createdAt      DateTime      @default(now())
+    updatedAt      DateTime      @updatedAt
+
+    guide    Guide     @relation("GuideToPackages", fields: [guideId], references: [id])
+    bookings Booking[] @relation("PackageToBookings")
+
+    @@index([guideId])
+    @@index([status])
+    @@index([pricePerPerson])
+    @@index([isDeleted])
+    @@map("tour_packages")
+}

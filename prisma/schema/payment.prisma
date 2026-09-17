@@ -1,0 +1,24 @@
+model Payment {
+    id            String        @id @default(uuid())
+    bookingId     String        @unique
+    amount        Float
+    bKashTrxId    String?       @unique
+    paymentMethod String        @default("bKash")
+    status        PaymentStatus @default(INITIATED)
+    commissionFee Float         @default(0)
+    guideEarning  Float         @default(0)
+    platformFee   Float         @default(0)
+    paidAt        DateTime?
+    refundedAt    DateTime?
+    refundReason  String?
+    paymentData   Json?
+    createdAt     DateTime      @default(now())
+    updatedAt     DateTime      @updatedAt
+
+    booking Booking @relation("BookingToPayment", fields: [bookingId], references: [id])
+
+    @@index([bookingId])
+    @@index([bKashTrxId])
+    @@index([status])
+    @@map("payments")
+}

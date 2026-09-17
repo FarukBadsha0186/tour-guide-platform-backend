@@ -1,0 +1,41 @@
+// tsup.config.ts
+import { defineConfig } from "tsup";
+
+export default defineConfig({
+  entry: ["src/server.ts"],
+  format: ["esm"],
+  target: "esnext",
+  outDir: "dist",
+  clean: true,
+  sourcemap: true,
+  splitting: false,
+  bundle: true,
+  minify: true,
+  treeshake: true,
+
+  skipNodeModulesBundle: true,
+  external: [
+    "@prisma/client",
+    "@prisma/adapter-pg",
+    "prisma",
+    "express",
+    "cors",
+    "cookie-parser",
+    "dotenv",
+    "http-status",
+    "jsonwebtoken",
+    "bcryptjs",
+    "nodemailer",
+    "ejs",
+    "pdfkit",
+    "redis",
+    "zod",
+    "date-fns",
+    "node-cron",
+    "google-auth-library",
+    "cloudinary",
+    "multer",
+    "pg",
+  ],
+  noExternal: [],
+});

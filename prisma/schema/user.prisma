@@ -1,0 +1,32 @@
+model User {
+  id                 String       @id @default(uuid())
+  name               String
+  email              String       @unique
+  password           String?
+  googleId           String?      @unique
+  authProvider       AuthProvider @default(CREDENTIAL)
+  emailVerified      Boolean      @default(false)
+  role               Role?        @default(TOURIST)
+  status             UserStatus   @default(PENDING)
+  needPasswordChange Boolean      @default(false)
+  imageUrl           String       @default("")
+  imagePublicId      String       @default("")
+  isDeleted          Boolean      @default(false)
+  deletedAt          DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  // ===== RELATIONS =====
+  tourist            Tourist?    @relation("UserToTourist")
+  guide              Guide?      @relation("UserToGuide")
+  userReviews        Review[]    @relation("UserReviews")
+  complaintsMade     Complaint[] @relation("ComplainantComplaints")
+  complaintsReceived Complaint[] @relation("DefendantComplaints")
+
+  // ===== INDEXES =====
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  // ===== TABLE MAP =====
+  @@map("users")
+}

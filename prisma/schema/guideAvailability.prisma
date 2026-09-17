@@ -1,0 +1,17 @@
+model GuideAvailability {
+    id        String   @id @default(uuid())
+    guideId   String
+    date      DateTime
+    startTime String
+    endTime   String
+    isBooked  Boolean  @default(false)
+    packageId String?
+
+    guide Guide @relation("GuideToAvailability", fields: [guideId], references: [id], onDelete: Cascade)
+
+    @@unique([guideId, date, startTime])
+    @@index([guideId])
+    @@index([date])
+    @@index([isBooked])
+    @@map("guide_availability")
+}

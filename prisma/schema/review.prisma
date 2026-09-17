@@ -1,0 +1,23 @@
+model Review {
+    id        String    @id @default(uuid())
+    bookingId String    @unique
+    touristId String
+    guideId   String
+    rating    Int
+    comment   String?
+    images    String[]
+    isDeleted Boolean   @default(false)
+    deletedAt DateTime?
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    booking Booking @relation("BookingToReview", fields: [bookingId], references: [id])
+    tourist User    @relation("UserReviews", fields: [touristId], references: [id])
+    guide   Guide   @relation("GuideToReviews", fields: [guideId], references: [id])
+
+    @@index([bookingId])
+    @@index([touristId])
+    @@index([guideId])
+    @@index([rating])
+    @@map("reviews")
+}

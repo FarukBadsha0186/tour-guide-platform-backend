@@ -1,0 +1,724 @@
+// services/admin.service.ts
+import httpStatus from "http-status";
+import { AppError } from "../../utils/AppError";
+import { prisma } from "../../lib/prisma";
+import {
+  Role,
+  UserStatus,
+} from "../../../generated/prisma/enums";
+import {
+  ITouristQuery,
+  IGuideQuery,
+  IUpdateUserStatus,
+} from "./admin.interface";
+
+// =============================================
+// ========== PUBLIC SERVICE METHODS ==========
+// =============================================
+
+// ===== 1. Get All Tourists =====
+const getAllTourists = async (query: ITouristQuery) => {
+  try {
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const skip = (page - 1) * limit;
+    const sortBy = query.sortBy || "createdAt";
+    const sortOrder = query.sortOrder || "desc";
+
+    const andConditions: any[] = [
+      { role: Role.TOURIST },
+      { isDeleted: false },
+    ];
+
+    // Filter by status
+    if (query.status) {
+      andConditions.push({ status: query.status as UserStatus });
+    }
+
+    // Search by name or email
+    if (query.search) {
+      andConditions.push({
+        OR: [
+          { name: { contains: query.search, mode: "insensitive" } },
+          { email: { contains: query.search, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    const tourists = await prisma.user.findMany({
+      where: { AND: andConditions },
+      take: limit,
+      skip,
+      orderBy: { [sortBy]: sortOrder },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        imageUrl: true,
+        role: true,
+        status: true,
+        emailVerified: true,
+        authProvider: true,
+        createdAt: true,
+        updatedAt: true,
+        tourist: {
+          select: {
+            id: true,
+            contactNumber: true,
+            address: true,
+            nationality: true,
+            dateOfBirth: true,
+            _count: {
+              select: {
+                bookings: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const total = await prisma.user.count({
+      where: { AND: andConditions },
+    });
+
+    return {
+      data: tourists,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+// ===== 2. Get All Guides =====
+const getAllGuides = async (query: IGuideQuery) => {
+  try {
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const skip = (page - 1) * limit;
+    const sortBy = query.sortBy || "createdAt";
+    const sortOrder = query.sortOrder || "desc";
+
+    const andConditions: any[] = [
+      { role: Role.GUIDE },
+      { isDeleted: false },
+    ];
+
+    // Filter by status
+    if (query.status) {
+      andConditions.push({ status: query.status as UserStatus });
+    }
+
+    // Filter by isApproved
+    if (query.isApproved !== undefined) {
+      andConditions.push({
+        guide: {
+          isApproved: query.isApproved,
+        },
+      });
+    }
+
+    // Search by name or email
+    if (query.search) {
+      andConditions.push({
+        OR: [
+          { name: { contains: query.search, mode: "insensitive" } },
+          { email: { contains: query.search, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    const guides = await prisma.user.findMany({
+      where: { AND: andConditions },
+      take: limit,
+      skip,
+      orderBy: { [sortBy]: sortOrder },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        imageUrl: true,
+        role: true,
+        status: true,
+        emailVerified: true,
+        authProvider: true,
+        createdAt: true,
+        updatedAt: true,
+        guide: {
+          select: {
+            id: true,
+            licenseNumber: true,
+            yearsExperience: true,
+            languages: true,
+            baseLocation: true,
+            bio: true,
+            isApproved: true,
+            rating: true,
+            totalReviews: true,
+            hourlyRate: true,
+            isAvailable: true,
+            totalEarnings: true,
+            totalBookings: true,
+            _count: {
+              select: {
+                packages: true,
+                bookings: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const total = await prisma.user.count({
+      where: { AND: andConditions },
+    });
+
+    return {
+      data: guides,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+// ===== 3. Update User Status (Block/Unblock) =====
+const updateUserStatus = async (
+  userId: string,
+  data: IUpdateUserStatus
+) => {
+  try {
+    const { status } = data;
+
+    // Check user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    if (user.isDeleted) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Cannot update status of deleted user"
+      );
+    }
+
+    // Prevent admin from blocking other admins
+    if (user.role === Role.ADMIN) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Cannot block/unblock admin users"
+      );
+    }
+
+    // Update status
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: status as UserStatus,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    return updatedUser;
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+// ===== 4. Delete User (Soft Delete) =====
+const deleteUser = async (userId: string) => {
+  try {
+    // Check user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    if (user.isDeleted) {
+      throw new AppError(httpStatus.BAD_REQUEST, "User already deleted");
+    }
+
+    // Prevent admin from deleting other admins
+    if (user.role === Role.ADMIN) {
+      throw new AppError(httpStatus.FORBIDDEN, "Cannot delete admin users");
+    }
+
+    // Soft delete
+    const deletedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isDeleted: true,
+        status: UserStatus.DELETED,
+        deletedAt: new Date(),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        isDeleted: true,
+        deletedAt: true,
+      },
+    });
+
+    return deletedUser;
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+// ===== 5. Get User Details =====
+const getUserDetails = async (userId: string) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        googleId: true,
+        authProvider: true,
+        emailVerified: true,
+        role: true,
+        status: true,
+        needPasswordChange: true,
+        imageUrl: true,
+        imagePublicId: true,
+        isDeleted: true,
+        deletedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        tourist: {
+          select: {
+            id: true,
+            contactNumber: true,
+            address: true,
+            nationality: true,
+            dateOfBirth: true,
+            createdAt: true,
+            _count: {
+              select: {
+                bookings: true,
+              },
+            },
+          },
+        },
+        guide: {
+          select: {
+            id: true,
+            licenseNumber: true,
+            yearsExperience: true,
+            languages: true,
+            baseLocation: true,
+            latitude: true,
+            longitude: true,
+            bio: true,
+            isApproved: true,
+            rating: true,
+            totalReviews: true,
+            hourlyRate: true,
+            isAvailable: true,
+            totalEarnings: true,
+            totalBookings: true,
+            createdAt: true,
+            _count: {
+              select: {
+                packages: true,
+                bookings: true,
+                guideReviews: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            userReviews: true,
+            complaintsMade: true,
+            complaintsReceived: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new AppError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    return user;
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+
+
+// src/app/module/admin/admin.service.ts
+
+// ... আগের imports
+import {
+  IAdminBookingQuery,
+  IAdminPaymentQuery,
+} from "./admin.interface";
+
+// =============================================
+// ===== 1. Get All Bookings (Admin) =====
+// =============================================
+const getAllBookings = async (query: IAdminBookingQuery) => {
+  try {
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const skip = (page - 1) * limit;
+    const sortBy = query.sortBy || "createdAt";
+    const sortOrder = query.sortOrder || "desc";
+
+    const andConditions: any[] = [];
+
+    // Filter by booking status
+    if (query.status) {
+      andConditions.push({ status: query.status });
+    }
+
+    // Filter by payment status
+    if (query.paymentStatus) {
+      andConditions.push({
+        payment: { status: query.paymentStatus },
+      });
+    }
+
+    // Filter by tourist email
+    if (query.touristEmail) {
+      andConditions.push({
+        tourist: {
+          user: {
+            email: { contains: query.touristEmail, mode: "insensitive" },
+          },
+        },
+      });
+    }
+
+    // Filter by guide email
+    if (query.guideEmail) {
+      andConditions.push({
+        guide: {
+          user: {
+            email: { contains: query.guideEmail, mode: "insensitive" },
+          },
+        },
+      });
+    }
+
+    // Filter by package
+    if (query.packageId) {
+      andConditions.push({ packageId: query.packageId });
+    }
+
+    // Filter by date range (tourDate)
+    if (query.startDate || query.endDate) {
+      const dateFilter: any = {};
+      if (query.startDate) dateFilter.gte = new Date(query.startDate);
+      if (query.endDate) dateFilter.lte = new Date(query.endDate);
+      andConditions.push({ tourDate: dateFilter });
+    }
+
+    const sortField = ["createdAt", "tourDate", "totalPrice"].includes(sortBy)
+      ? sortBy
+      : "createdAt";
+
+    const bookings = await prisma.booking.findMany({
+      where: andConditions.length > 0 ? { AND: andConditions } : {},
+      take: limit,
+      skip,
+      orderBy: { [sortField]: sortOrder as "asc" | "desc" },
+      include: {
+        tourist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+        guide: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+        package: {
+          select: {
+            id: true,
+            title: true,
+            meetingPoint: true,
+            pricePerPerson: true,
+          },
+        },
+        payment: {
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            bKashTrxId: true,
+            guideEarning: true,
+            commissionFee: true,
+            platformFee: true,
+            paidAt: true,
+            refundedAt: true,
+            refundReason: true,
+          },
+        },
+      },
+    });
+
+    const total = await prisma.booking.count({
+      where: andConditions.length > 0 ? { AND: andConditions } : {},
+    });
+
+    return {
+      data: bookings,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+// =============================================
+// ===== 2. Get Single Booking Details (Admin) =====
+// =============================================
+const getBookingDetails = async (bookingId: string) => {
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        tourist: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                imageUrl: true,
+                status: true,
+                emailVerified: true,
+              },
+            },
+          },
+        },
+        guide: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                imageUrl: true,
+                status: true,
+              },
+            },
+          },
+        },
+        package: {
+          include: {
+            guide: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    imageUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        payment: true,          // ← Full payment data
+        review: true,           // ← Review if exists
+        complaint: true,        // ← Complaint if exists
+      },
+    });
+
+    if (!booking) {
+      throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+    }
+
+    return booking;
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+// =============================================
+// ===== 3. Get All Payments (Admin) =====
+// =============================================
+const getAllPayments = async (query: IAdminPaymentQuery) => {
+  try {
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const skip = (page - 1) * limit;
+    const sortBy = query.sortBy || "createdAt";
+    const sortOrder = query.sortOrder || "desc";
+
+    const andConditions: any[] = [];
+
+    // Filter by payment status
+    if (query.status) {
+      andConditions.push({ status: query.status });
+    }
+
+    // Filter by payment method
+    if (query.method) {
+      andConditions.push({ paymentMethod: query.method });
+    }
+
+    // Filter by date range (createdAt)
+    if (query.startDate || query.endDate) {
+      const dateFilter: any = {};
+      if (query.startDate) dateFilter.gte = new Date(query.startDate);
+      if (query.endDate) dateFilter.lte = new Date(query.endDate);
+      andConditions.push({ createdAt: dateFilter });
+    }
+
+    const sortField = ["createdAt", "amount", "paidAt"].includes(sortBy)
+      ? sortBy
+      : "createdAt";
+
+    const payments = await prisma.payment.findMany({
+      where: andConditions.length > 0 ? { AND: andConditions } : {},
+      take: limit,
+      skip,
+      orderBy: { [sortField]: sortOrder as "asc" | "desc" },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            bookingReference: true,
+            tourDate: true,
+            numberOfPeople: true,
+            totalPrice: true,
+            status: true,
+            tourist: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    imageUrl: true,
+                  },
+                },
+              },
+            },
+            guide: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    imageUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const total = await prisma.payment.count({
+      where: andConditions.length > 0 ? { AND: andConditions } : {},
+    });
+
+    // Calculate statistics
+    const stats = await prisma.payment.groupBy({
+      by: ["status"],
+      _count: true,
+      _sum: {
+        amount: true,
+        guideEarning: true,
+        commissionFee: true,
+        platformFee: true,
+      },
+    });
+
+    return {
+      data: payments,
+      stats,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
+
+
+
+
+export const AdminService = {
+  getAllTourists,
+  getAllGuides,
+  updateUserStatus,
+  deleteUser,
+  getUserDetails,
+
+    getAllBookings,
+  getBookingDetails,
+  getAllPayments,
+};

@@ -1,0 +1,16 @@
+model Tourist {
+    id            String    @id @default(uuid())
+    name          String?
+    email         String?   @unique
+    userId        String    @unique
+    contactNumber String?
+    address       String?
+    nationality   String?
+    dateOfBirth   DateTime?
+
+    user     User      @relation("UserToTourist", fields: [userId], references: [id], onDelete: Cascade)
+    bookings Booking[] @relation("TouristToBookings")
+
+    @@index([userId])
+    @@map("tourists")
+}

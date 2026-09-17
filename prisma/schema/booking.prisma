@@ -1,0 +1,33 @@
+model Booking {
+    id                 String        @id @default(uuid())
+    bookingReference   String        @unique @default(uuid())
+    touristId          String
+    guideId            String
+    packageId          String
+    tourDate           DateTime
+    numberOfPeople     Int
+    totalPrice         Float
+    specialRequests    String?
+    status             BookingStatus @default(PENDING_PAYMENT)
+    paymentDeadline    DateTime?
+    completedAt        DateTime?
+    cancelledAt        DateTime?
+    cancellationReason String?
+    createdAt          DateTime      @default(now())
+    updatedAt          DateTime      @updatedAt
+
+    tourist   Tourist     @relation("TouristToBookings", fields: [touristId], references: [id])
+    guide     Guide       @relation("GuideToBookings", fields: [guideId], references: [id])
+    package   TourPackage @relation("PackageToBookings", fields: [packageId], references: [id])
+    payment   Payment?    @relation("BookingToPayment")
+    review    Review?     @relation("BookingToReview")
+    complaint Complaint?  @relation("BookingToComplaint")
+
+    @@index([touristId])
+    @@index([guideId])
+    @@index([packageId])
+    @@index([status])
+    @@index([tourDate])
+    @@index([bookingReference])
+    @@map("bookings")
+}

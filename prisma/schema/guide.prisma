@@ -1,0 +1,29 @@
+model Guide {
+    id              String   @id @default(uuid())
+    userId          String   @unique
+    licenseNumber   String   @unique
+    yearsExperience Int      @default(0)
+    languages       String[]
+    baseLocation    String
+    latitude        Float?
+    longitude       Float?
+    bio             String?
+    isApproved      Boolean  @default(false)
+    rating          Float    @default(0)
+    totalReviews    Int      @default(0)
+    hourlyRate      Float?
+    isAvailable     Boolean  @default(true)
+    totalEarnings   Float    @default(0)
+    totalBookings   Int      @default(0)
+
+    user         User                @relation("UserToGuide", fields: [userId], references: [id], onDelete: Cascade)
+    packages     TourPackage[]       @relation("GuideToPackages")
+    bookings     Booking[]           @relation("GuideToBookings")
+    availability GuideAvailability[] @relation("GuideToAvailability")
+    guideReviews Review[]            @relation("GuideToReviews")
+
+    @@index([userId])
+    @@index([isApproved])
+    @@index([baseLocation])
+    @@map("guides")
+}
