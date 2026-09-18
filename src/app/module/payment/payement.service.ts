@@ -273,186 +273,6 @@ const executeBkashPayment = async (paymentId: string) => {
 };
 
 
-// const initializePayment = async (
-//   paymentData: IBkashPaymentRequest
-// ): Promise<IBkashPaymentResponse> => {
-//   try {
-//     const {
-//       packageId,
-//       userId,
-//       numberOfPeople,
-//       tourDate,
-//       specialRequests,
-//     } = paymentData;
-
-//     // 1. Check tour package
-//     const tourPackage = await prisma.tourPackage.findUnique({
-//       where: { id: packageId },
-//       include: {
-//         guide: {
-//           include: {
-//             user: true,
-//           },
-//         },
-//       },
-//     });
-
-//     if (!tourPackage) {
-//       throw new AppError(httpStatus.NOT_FOUND, "Tour package not found");
-//     }
-
-//     if (tourPackage.status !== PackageStatus.APPROVED) {
-//       throw new AppError(
-//         httpStatus.BAD_REQUEST,
-//         "Tour package is not available"
-//       );
-//     }
-
-//     if (tourPackage.isDeleted) {
-//       throw new AppError(httpStatus.BAD_REQUEST, "Tour package is deleted");
-//     }
-
-//     // 2. Check group size
-//     if (
-//       numberOfPeople < tourPackage.minGroupSize ||
-//       numberOfPeople > tourPackage.maxGroupSize
-//     ) {
-//       throw new AppError(
-//         httpStatus.BAD_REQUEST,
-//         `Group size must be between ${tourPackage.minGroupSize} and ${tourPackage.maxGroupSize}`
-//       );
-//     }
-
-//     // 3. Check tourist
-//     const tourist = await prisma.tourist.findUnique({
-//       where: { userId },
-//       include: {
-//         user: true,
-//       },
-//     });
-
-//     if (!tourist) {
-//       throw new AppError(httpStatus.NOT_FOUND, "Tourist profile not found");
-//     }
-
-//     // 4. Prevent guide from booking own package
-//     if (tourPackage.guide.user.id === userId) {
-//       throw new AppError(
-//         httpStatus.BAD_REQUEST,
-//         "You cannot book your own tour package"
-//       );
-//     }
-
-//     // 5. Validate tour date
-//     const tourDateObj = new Date(tourDate);
-//     if (isNaN(tourDateObj.getTime())) {
-//       throw new AppError(httpStatus.BAD_REQUEST, "Invalid tour date format");
-//     }
-
-//     if (tourDateObj < new Date()) {
-//       throw new AppError(
-//         httpStatus.BAD_REQUEST,
-//         "Tour date cannot be in the past"
-//       );
-//     }
-
-//     // 6. Calculate total price
-//     const totalPrice = numberOfPeople * tourPackage.pricePerPerson;
-
-//     // 7. Calculate fees (10% platform fee)
-//     const platformFee = totalPrice * 0.1;
-//     const guideEarning = totalPrice - platformFee;
-
-//     // 8. Create booking
-//     const booking = await prisma.booking.create({
-//       data: {
-//         bookingReference: generateBookingReference(),
-//         touristId: tourist.id,
-//         guideId: tourPackage.guideId,
-//         packageId: tourPackage.id,
-//         tourDate: tourDateObj,
-//         numberOfPeople,
-//         totalPrice,
-//         specialRequests: specialRequests || null,
-//         status: BookingStatus.PENDING_PAYMENT,
-//         paymentDeadline: new Date(Date.now() + 30 * 60 * 1000), // 30 min
-//       },
-//     });
-
-//     // 9. Create payment record
-//     const payment = await prisma.payment.create({
-//       data: {
-//         bookingId: booking.id,
-//         amount: totalPrice,
-//         paymentMethod: "bKash",
-//         status: PaymentStatus.INITIATED,
-//         commissionFee: platformFee,
-//         guideEarning: guideEarning,
-//         platformFee: platformFee,
-//       },
-//     });
-
-//     // 10. Call bKash
-//     const invoiceNumber = `BKASH-${booking.id.slice(0, 8)}-${Date.now()}`;
-//     const paymentResult = await createBkashPayment(totalPrice, invoiceNumber);
-
-//     if (!paymentResult.success) {
-//       // Rollback booking and payment
-//       await prisma.booking.update({
-//         where: { id: booking.id },
-//         data: {
-//           status: BookingStatus.CANCELLED,
-//           cancelledAt: new Date(),
-//         },
-//       });
-
-//       await prisma.payment.update({
-//         where: { id: payment.id },
-//         data: {
-//           status: PaymentStatus.FAILED,
-//         },
-//       });
-
-//       throw new AppError(
-//         httpStatus.BAD_GATEWAY,
-//         (paymentResult as any).error || "Payment initialization failed"
-//       );
-//     }
-
-//     // 11. Update payment with bKash data
-//     await prisma.payment.update({
-//       where: { id: payment.id },
-//       data: {
-//         paymentData: {
-//           paymentId: paymentResult.paymentId,
-//           invoiceNumber: paymentResult.invoiceNumber,
-//           bkashURL: paymentResult.bkashURL,
-//           createTime: paymentResult.createTime,
-//         },
-//       },
-//     });
-
-//     //  Return with all required fields
-//     return {
-//       success: true,
-//       paymentId: paymentResult.paymentId,
-//       bkashURL: paymentResult.bkashURL,
-//       bookingReference: booking.bookingReference,
-//       amount: Number(paymentResult.amount) || totalPrice,
-//       transactionStatus: paymentResult.transactionStatus || "Initiated",
-//     };
-//   } catch (error: any) {
-//     if (error instanceof AppError) throw error;
-//     throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
-//   }
-// };
-
-
-
-
-
-
-// ===== 2. Execute Payment (Callback) =====
 
 const initializePayment = async (
   paymentData: IBkashPaymentRequest
@@ -531,13 +351,13 @@ const initializePayment = async (
       throw new AppError(httpStatus.BAD_REQUEST, "Tour date cannot be in the past");
     }
 
-    // ✅ 6. Find existing booking (Tourist create করা)
+    
     const existingBooking = await prisma.booking.findFirst({
       where: {
         touristId: tourist.id,
         packageId: tourPackage.id,
         tourDate: tourDateObj,
-        status: BookingStatus.PENDING_PAYMENT,     // ← শুধু PENDING
+        status: BookingStatus.PENDING_PAYMENT,   
       },
       include: {
         payment: true,

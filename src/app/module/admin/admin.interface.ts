@@ -1,5 +1,7 @@
 // interfaces/admin.interface.ts
 
+import { PackageStatus, UserStatus } from "../../../generated/prisma/enums";
+
 // ===== Query Interface (Tourists) =====
 export interface ITouristQuery {
   limit?: number;
@@ -67,4 +69,44 @@ export interface IAdminPaymentQuery {
   method?: string;
   startDate?: string;
   endDate?: string;
+}
+
+
+export interface IAdminApproveGuidePayload {
+  isApproved: boolean;
+  reason?: string;
+}
+
+export interface IAdminApprovePackagePayload {
+  status: "APPROVED" | "REJECTED";
+  reason?: string;
+}
+
+
+
+// ============ GET ALL GUIDES ============
+export interface IGetAllGuidesQuery {
+  isApproved?: boolean;
+  status?: UserStatus;
+  page?: number;
+  limit?: number;
+}
+
+// ============ APPROVE GUIDE ============
+export interface IApproveGuidePayload {
+  isApproved: boolean;
+}
+
+// ============ GET ALL PACKAGES ============
+export interface IGetAllPackagesQuery {
+  status?: PackageStatus;
+  isDeleted?: boolean;
+  guideId?: string;
+  page?: number;
+  limit?: number;
+}
+
+// ============ APPROVE PACKAGE ============
+export interface IApprovePackagePayload {
+  status: PackageStatus;
 }

@@ -21,8 +21,9 @@ router.get("/profile/",
 router.get("/allPackage", GuideControllers.getAllPackages);
 
 router.get("/allbookings", auth("GUIDE"),GuideControllers.getMyBookings);
-router.get("/:id", GuideControllers.getPackageById);
 router.post( "/createpackage",auth("GUIDE"),GuideControllers.createPackage);
+router.get("/:id", GuideControllers.getPackageById);
+
 
 
 router.get("/my-packages",auth("GUIDE"),GuideControllers.getMyPackages

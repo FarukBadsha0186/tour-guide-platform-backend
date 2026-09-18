@@ -3,6 +3,9 @@ import { Request, Response } from "express";
 import httpStatus from "http-status";
 import { AppError } from "../../utils/AppError";
 import { AdminService } from "../admin/admin.service";
+import { catchAsync } from "../../utils/catchAsync";
+import { sendResponse } from "../../utils/sendResponse";
+import { PackageStatus } from "../../../generated/prisma/enums";
 
 interface RequestUser {
   userId: string;
@@ -304,6 +307,105 @@ const getAllPayments = async (req: Request, res: Response) => {
 };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ================================================================
+// ============ APPROVE GUIDE ============
+// ================================================================
+const approveGuide = catchAsync(async (req: Request, res: Response) => {
+  const { guideId } = req.params;
+  const { isApproved } = req.body;
+
+  if (typeof isApproved !== "boolean") {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: "isApproved (boolean) is required in body",
+      data: null,
+    });
+  }
+
+  const result = await AdminService.approveGuide(guideId as string, { isApproved });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: isApproved ? "Guide approved successfully" : "Guide rejected",
+    data: result,
+  });
+});
+
+// ================================================================
+// ============ GET ALL PACKAGES ============
+// ================================================================
+const getAllPackages = catchAsync(async (req: Request, res: Response) => {
+  const { status, isDeleted, guideId, page, limit } = req.query;
+
+  const query: any = {};
+  if (status) query.status = status;
+  if (isDeleted !== undefined) query.isDeleted = isDeleted === "true";
+  if (guideId) query.guideId = guideId;
+  if (page) query.page = Number(page);
+  if (limit) query.limit = Number(limit);
+
+  const result = await AdminService.getAllPackages(query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Packages retrieved successfully",
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
+// ================================================================
+// ============ APPROVE PACKAGE ============
+// ================================================================
+const approvePackage = catchAsync(async (req: Request, res: Response) => {
+  const { packageId } = req.params;
+  const { status } = req.body;
+
+  if (
+    status !== PackageStatus.APPROVED &&
+    status !== PackageStatus.REJECTED
+  ) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: "status must be APPROVED or REJECTED",
+      data: null,
+    });
+  }
+
+  const result = await AdminService.approvePackage(packageId as string, { status });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `Package ${status.toLowerCase()} successfully`,
+    data: result,
+  });
+});
+
+
+
+
 export const AdminController = {
   getAllTourists,
   getAllGuides,
@@ -313,4 +415,8 @@ export const AdminController = {
    getAllBookings,
   getBookingDetails,
   getAllPayments,
+
+  approveGuide,
+  getAllPackages,
+  approvePackage,
 };

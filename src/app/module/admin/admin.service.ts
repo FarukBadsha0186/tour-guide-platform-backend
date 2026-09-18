@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { AppError } from "../../utils/AppError";
 import { prisma } from "../../lib/prisma";
 import {
+  PackageStatus,
   Role,
   UserStatus,
 } from "../../../generated/prisma/enums";
@@ -10,6 +11,8 @@ import {
   ITouristQuery,
   IGuideQuery,
   IUpdateUserStatus,
+  IGetAllPackagesQuery,
+  IApproveGuidePayload,
 } from "./admin.interface";
 
 // =============================================
@@ -708,6 +711,212 @@ const getAllPayments = async (query: IAdminPaymentQuery) => {
   }
 };
 
+const approveGuide = async (
+  guideId: string,
+  payload: IApproveGuidePayload
+) => {
+  const { isApproved } = payload;
+
+  // 1. Guide khujo
+  const guide = await prisma.guide.findUnique({
+    where: { id: guideId },
+    include: { user: true },
+  });
+
+  if (!guide) {
+    throw new AppError(httpStatus.NOT_FOUND, "Guide not found");
+  }
+
+  // 2. Already same status
+  if (guide.isApproved === isApproved) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Guide is already ${isApproved ? "approved" : "rejected"}`
+    );
+  }
+
+  // 3. User deleted
+  if (guide.user.isDeleted) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Cannot approve — user account is deleted"
+    );
+  }
+
+  // 4. Approve korar age profile complete check
+  if (isApproved) {
+    const missing: string[] = [];
+
+    if (!guide.licenseNumber || guide.licenseNumber === "PENDING") {
+      missing.push("licenseNumber");
+    }
+    if (!guide.bio) missing.push("bio");
+    if (!guide.languages || guide.languages.length === 0) {
+      missing.push("languages");
+    }
+    if (!guide.baseLocation) missing.push("baseLocation");
+
+    if (missing.length > 0) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Cannot approve — profile incomplete. Missing: ${missing.join(", ")}`
+      );
+    }
+  }
+
+  // 5. Transaction
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedGuide = await tx.guide.update({
+      where: { id: guideId },
+      data: { isApproved },
+    });
+
+    if (isApproved) {
+      await tx.user.update({
+        where: { id: guide.userId },
+        data: { status: UserStatus.ACTIVE },
+      });
+    }
+
+    return updatedGuide;
+  });
+
+  return result;
+};
+const getAllPackages = async (query: IGetAllPackagesQuery) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+
+  if (query.status) {
+    where.status = query.status;
+  }
+
+  if (typeof query.isDeleted === "boolean") {
+    where.isDeleted = query.isDeleted;
+  }
+
+  if (query.guideId) {
+    where.guideId = query.guideId;
+  }
+
+  const [packages, total] = await Promise.all([
+    prisma.tourPackage.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        guide: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: { bookings: true },
+        },
+      },
+    }),
+    prisma.tourPackage.count({ where }),
+  ]);
+
+  return {
+    data: packages,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+// ================================================================
+// ============ APPROVE PACKAGE ============
+// ================================================================
+const approvePackage = async (
+  packageId: string,
+  payload: { status: PackageStatus }
+) => {
+  const { status } = payload;
+
+  // 1. Status validate
+  if (
+    status !== PackageStatus.APPROVED &&
+    status !== PackageStatus.REJECTED
+  ) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Status must be APPROVED or REJECTED"
+    );
+  }
+
+  // 2. Package khujo
+  const tourPackage = await prisma.tourPackage.findUnique({
+    where: { id: packageId },
+    include: {
+      guide: {
+        include: { user: true },
+      },
+    },
+  });
+
+  if (!tourPackage) {
+    throw new AppError(httpStatus.NOT_FOUND, "Package not found");
+  }
+
+  // 3. Deleted
+  if (tourPackage.isDeleted) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Cannot approve — package is deleted"
+    );
+  }
+
+  // 4. Guide approved
+  if (!tourPackage.guide.isApproved) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Cannot approve package — guide is not approved yet"
+    );
+  }
+
+  // 5. Already same status
+  if (tourPackage.status === status) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Package is already ${status}`
+    );
+  }
+
+  // 6. Update
+  const updated = await prisma.tourPackage.update({
+    where: { id: packageId },
+    data: { status },
+    include: {
+      guide: {
+        include: {
+          user: {
+            select: { name: true, email: true, imageUrl: true },
+          },
+        },
+      },
+    },
+  });
+
+  return updated;
+};
+
+
 
 
 
@@ -721,4 +930,9 @@ export const AdminService = {
     getAllBookings,
   getBookingDetails,
   getAllPayments,
+
+
+  approveGuide,
+  getAllPackages,
+  approvePackage,
 };
