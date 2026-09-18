@@ -24,7 +24,7 @@ router.patch("/packages/:packageId/approve",auth(Role.ADMIN),
   AdminController.approvePackage
 );
 
-router.patch("/guides/:guideId/approve",auth(Role.ADMIN),
+router.patch("/guides/:userId/approve",auth(Role.ADMIN),
   AdminController.approveGuide
 );
 

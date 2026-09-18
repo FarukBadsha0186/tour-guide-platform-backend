@@ -324,12 +324,10 @@ const getAllPayments = async (req: Request, res: Response) => {
 
 
 
-// ================================================================
-// ============ APPROVE GUIDE ============
-// ================================================================
 const approveGuide = catchAsync(async (req: Request, res: Response) => {
-  const { guideId } = req.params;
-  const { isApproved } = req.body;
+  const { userId } = req.params;          // 👈 userId (User.id)
+  const body = req.body || {};
+  const { isApproved } = body;
 
   if (typeof isApproved !== "boolean") {
     return sendResponse(res, {
@@ -340,7 +338,7 @@ const approveGuide = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  const result = await AdminService.approveGuide(guideId as string, { isApproved });
+  const result = await AdminService.approveGuide(userId as string, { isApproved });
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

@@ -711,20 +711,24 @@ const getAllPayments = async (query: IAdminPaymentQuery) => {
   }
 };
 
+
 const approveGuide = async (
-  guideId: string,
+  userId: string,                    // 👈 ekhon userId (User.id)
   payload: IApproveGuidePayload
 ) => {
   const { isApproved } = payload;
 
-  // 1. Guide khujo
+  // 1. User.id diye Guide khujo
   const guide = await prisma.guide.findUnique({
-    where: { id: guideId },
+    where: { userId },               // 👈 userId diye
     include: { user: true },
   });
 
   if (!guide) {
-    throw new AppError(httpStatus.NOT_FOUND, "Guide not found");
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      "Guide profile not found for this user"
+    );
   }
 
   // 2. Already same status
@@ -764,16 +768,16 @@ const approveGuide = async (
     }
   }
 
-  // 5. Transaction
+  // 5. Transaction — Guide + User duitai update
   const result = await prisma.$transaction(async (tx) => {
     const updatedGuide = await tx.guide.update({
-      where: { id: guideId },
+      where: { userId },             // 👈 userId
       data: { isApproved },
     });
 
     if (isApproved) {
       await tx.user.update({
-        where: { id: guide.userId },
+        where: { id: userId },       // 👈 userId
         data: { status: UserStatus.ACTIVE },
       });
     }
@@ -783,6 +787,9 @@ const approveGuide = async (
 
   return result;
 };
+
+
+
 const getAllPackages = async (query: IGetAllPackagesQuery) => {
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
