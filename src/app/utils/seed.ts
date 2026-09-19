@@ -225,7 +225,7 @@
 
 // src/app/utils/seed.ts
 
-import { Role } from "../../generated/prisma/enums"
+import { Role, UserStatus } from "../../generated/prisma/enums"
 import config from "../config";
 import { prisma } from "../lib/prisma"
 import bcrypt from "bcryptjs";
@@ -305,11 +305,12 @@ export const seedTesterAdmin = async() =>{
                 password :hashedPassword,
                 role:Role.ADMIN,
                 needPasswordChange:false,
-                emailVerified:true
+                emailVerified:true,
+                status: UserStatus.ACTIVE, 
             }
         })
 
-        console.log("✅ Tester Admin Created ", testerAdmin.email);
+        console.log(" Tester Admin Created ", testerAdmin.email);
     } catch (error) {
         console.log("Error seeding Tester Admin :", error);
     }
@@ -347,7 +348,7 @@ export const seedTesterGuide = async() =>{
             }
         })
 
-        console.log("✅ Guide Created ", doctor.email);
+        console.log(" Guide Created ", doctor.email);
     } catch (error) {
         console.log("Error seeding Guide :", error);
     }
@@ -385,7 +386,7 @@ export const seedTesterTourist = async() =>{
             }
         })
 
-        console.log("✅ Tourist Created ", tourist.email);
+        console.log(" Tourist Created ", tourist.email);
     } catch (error) {
         console.log("Error seeding Tourist :", error);
     }
@@ -402,9 +403,9 @@ async function main() {
     await seedTesterGuide();
     await seedTesterTourist();
 
-    console.log("\n🎉 Seeding complete!");
+    console.log(" Seeding complete!");
   } catch (error) {
-    console.error("❌ Seed error:", error);
+    console.error(" Seed error:", error);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
