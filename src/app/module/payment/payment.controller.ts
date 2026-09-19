@@ -66,7 +66,7 @@ const paymentCallback = async (req: Request, res: Response) => {
 const paymentID = data.paymentID || data.paymentId;
 const status = data.status;
 
-    console.log("📞 Payment Callback Received:", { paymentID, status });
+    console.log(" Payment Callback Received:", { paymentID, status });
 
     if (!paymentID) {
       throw new AppError(httpStatus.BAD_REQUEST, "Payment ID is required");

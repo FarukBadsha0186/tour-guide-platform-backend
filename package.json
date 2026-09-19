@@ -3,23 +3,23 @@
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
- "scripts": {
-  "dev": "tsx watch src/server.ts",
-  "build": "tsup",
-  "start": "node dist/server.js",
-  "test": "echo \"Error: no test specified\" && exit 1",
-  "format:check": "npx @biomejs/biome format ./src",
-  "format:fix": "npx @biomejs/biome format --write ./src",
-  "lint:check": "npx @biomejs/biome lint ./src",
-  "lint:fix": "npx @biomejs/biome lint --write ./src",
-  "postinstall": "prisma generate",
-  "vercel-build": "prisma generate && tsup"
-},
- "allowScripts": {
-    "@prisma/engines": true,
-    "esbuild": true,
-    "prisma": true
-  },
+    "scripts": {
+        "dev": "tsx watch src/server.ts",
+        "build": "tsup",
+        "start": "node dist/server.js",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "format:check": "npx @biomejs/biome format ./src",
+        "format:fix": "npx @biomejs/biome format --write ./src",
+        "lint:check": "npx @biomejs/biome lint ./src",
+        "lint:fix": "npx @biomejs/biome lint --write ./src",
+        "postinstall": "prisma generate",
+        "vercel-build": "prisma generate && tsup"
+    },
+    "allowScripts": {
+        "@prisma/engines": true,
+        "esbuild": true,
+        "prisma": true
+    },
     "keywords": [],
     "author": "",
     "license": "ISC",
@@ -35,7 +35,7 @@
         "dotenv": "^17.4.2",
         "ejs": "^6.0.1",
         "express": "^5.2.1",
-        "google-auth-library": "^11.0.2",
+        "google-auth-library": "^11.1.0",
         "http-status": "^2.1.0",
         "jsonwebtoken": "^9.0.3",
         "multer": "^2.3.0",

@@ -13,9 +13,7 @@ import { AppError } from "../../utils/AppError";
 
 
 // ===== UPDATE GUIDE PROFILE (WITH IMAGE) =====
-// guide.controller.ts
 
-// guide.controller.ts
 
 const updateMyProfile = catchAsync(async (req: Request & { user?: any }, res: Response) => {
   const userId = req.user?.userId;
@@ -34,7 +32,7 @@ const updateMyProfile = catchAsync(async (req: Request & { user?: any }, res: Re
     profileImageUrl = result.secure_url;
   }
 
-  // ✅ Pass image URL to service
+  // 
   const result = await GuideServices.updateMyProfile(userId, payload, profileImageUrl);
 
   sendResponse(res, {
@@ -235,59 +233,7 @@ const getBookingDetails = async (req: Request, res: Response) => {
 };
 
 // ===== 3. Update Booking Status =====
-// const updateBookingStatus = async (req: Request, res: Response) => {
-//   try {
-//     const user = req.user as RequestUser;
-//     const { bookingId } = req.params;
-//     const { status, cancellationReason } = req.body;
 
-//     if (!user) {
-//       throw new AppError(httpStatus.UNAUTHORIZED, "User not authenticated");
-//     }
-
-//     if (!bookingId) {
-//       throw new AppError(httpStatus.BAD_REQUEST, "Booking ID is required");
-//     }
-
-//     if (!status) {
-//       throw new AppError(httpStatus.BAD_REQUEST, "Status is required");
-//     }
-
-//     if (!["COMPLETED", "CANCELLED"].includes(status)) {
-//       throw new AppError(
-//         httpStatus.BAD_REQUEST,
-//         "Status must be either COMPLETED or CANCELLED"
-//       );
-//     }
-
-//     const result = await GuideServices.updateBookingStatus(
-//       bookingId as string,
-//       user.userId,
-//       {
-//         status,
-//         cancellationReason,
-//       }
-//     );
-
-//     res.status(httpStatus.OK).json({
-//       success: true,
-//       message: result.message,
-//       data: result.booking,
-//     });
-//   } catch (error: any) {
-//     if (error instanceof AppError) {
-//       res.status(error.statusCode).json({
-//         success: false,
-//         message: error.message,
-//       });
-//     } else {
-//       res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-//         success: false,
-//         message: error.message || "Something went wrong",
-//       });
-//     }
-//   }
-// };
 
 const updateBookingStatus = async (req: Request, res: Response) => {
   try {
@@ -323,13 +269,13 @@ const updateBookingStatus = async (req: Request, res: Response) => {
       }
     );
 
-    // ✅ Response with refund (if CANCELLED)
+    // Response with refund (if CANCELLED)
     res.status(httpStatus.OK).json({
       success: true,
       message: result.message,
       data: {
         booking: result.booking,
-        refund: (result as any).refund || null,    // ✅ এটা যোগ করুন
+        refund: (result as any).refund || null,    
       },
     });
   } catch (error: any) {

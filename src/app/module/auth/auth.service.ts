@@ -6,6 +6,7 @@ import { prisma } from "../../lib/prisma";
 import { jwtUtils } from "../../utils/jwt";
 import ejs, {} from "ejs";
 import path from "path";
+import httpStatus from "http-status";
 
 import type {
 	IForgotPasswprd,
@@ -18,13 +19,14 @@ import type {
 	IVerifyEmailPayload,
 } from "./auth.interface";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
-import { googleClinet } from "../../lib/googleAuth";
+import { googleClient } from "../../lib/googleAuth";
 import { email } from "zod";
 
 import crypto from "crypto";
 import { redisclient } from "../../lib/redis";
 import { transporter } from "../../lib/nodemailer";
 import { configDotenv } from "dotenv";
+import { AppError } from "../../utils/AppError";
 
 
 
@@ -434,7 +436,7 @@ import { configDotenv } from "dotenv";
         include: { guide: true },
       });
     } else {
-      // ===== CREATE TOURIST USER =====
+      
       createdUser = await prisma.user.create({
         data: {
           name: userPayload.name,
@@ -644,167 +646,317 @@ const refreshToken = async (token: string) => {
 	};
 };
 
- const googleLogin = async ( payload: IGoogleLoginPayload) =>{
+//  const googleLogin = async ( payload: IGoogleLoginPayload) =>{
 
-	let  googleIdTOkenPayload :TokenPayload |null |undefined =null;
+// 	let  googleIdTOkenPayload :TokenPayload |null |undefined =null;
 
-	try {
-		const ticket= await googleClinet.verifyIdToken({
-			idToken : payload.idToken,
-			audience: config.google_client_id
-		})
+// 	try {
+// 		const ticket= await googleClinet.verifyIdToken({
+// 			idToken : payload.idToken,
+// 			audience: config.google_client_id
+// 		})
 
-		googleIdTOkenPayload =ticket.getPayload()
-	} catch(error){
-		console.log("Google ID Token verfication Failed");
-		throw new Error("Invalid or Expired Google ID token");
+// 		googleIdTOkenPayload =ticket.getPayload()
+// 	} catch(error){
+// 		console.log("Google ID Token verfication Failed");
+// 		throw new Error("Invalid or Expired Google ID token");
 		
 
-	}
+// 	}
 
-	if (!googleIdTOkenPayload?.email){
-		throw new Error("Invalid or email not found");
+// 	if (!googleIdTOkenPayload?.email){
+// 		throw new Error("Invalid or email not found");
 		
-	}
-	if (!googleIdTOkenPayload.name){
-		throw new Error("Invalid  name are not found");
+// 	}
+// 	if (!googleIdTOkenPayload.name){
+// 		throw new Error("Invalid  name are not found");
 		
-	}
+// 	}
 
-	googleIdTOkenPayload.sub
-	const ifTouristExiswithGoogleAuth = await prisma.user.findUnique({
-		where :{
-			email : googleIdTOkenPayload.email,
-			role: Role.TOURIST,
-			googleId :googleIdTOkenPayload.sub
-		}
-	})
+// 	googleIdTOkenPayload.sub
+// 	const ifTouristExiswithGoogleAuth = await prisma.user.findUnique({
+// 		where :{
+// 			email : googleIdTOkenPayload.email,
+// 			role: Role.TOURIST,
+// 			googleId :googleIdTOkenPayload.sub
+// 		}
+// 	})
 
-	let user =ifTouristExiswithGoogleAuth ;
-	if (!ifTouristExiswithGoogleAuth){
+// 	let user =ifTouristExiswithGoogleAuth ;
+// 	if (!ifTouristExiswithGoogleAuth){
 
-		const ifTouristExiswithCredentials = await prisma.user.findUnique({
-			where :{
-				email :googleIdTOkenPayload.email,
-				role : Role.TOURIST,
-				authProvider : AuthProvider.CREDENTIAL,
-			}
-		})
+// 		const ifTouristExiswithCredentials = await prisma.user.findUnique({
+// 			where :{
+// 				email :googleIdTOkenPayload.email,
+// 				role : Role.TOURIST,
+// 				authProvider : AuthProvider.CREDENTIAL,
+// 			}
+// 		})
 
-		if (ifTouristExiswithCredentials){
-if (!ifTouristExiswithCredentials.emailVerified){
-	throw new Error("User not Verified");
+// 		if (ifTouristExiswithCredentials){
+// if (!ifTouristExiswithCredentials.emailVerified){
+// 	throw new Error("User not Verified");
 	
-}
+// }
 
 
-			if (ifTouristExiswithCredentials.status=== UserStatus.BLOCKED){
-				throw new Error("User is Blocked");
+// 			if (ifTouristExiswithCredentials.status=== UserStatus.BLOCKED){
+// 				throw new Error("User is Blocked");
 				
-			}
-			if ( ifTouristExiswithCredentials.isDeleted ||ifTouristExiswithCredentials.status === UserStatus.DELETED){
-				throw new Error("User is Deleted");
+// 			}
+// 			if ( ifTouristExiswithCredentials.isDeleted ||ifTouristExiswithCredentials.status === UserStatus.DELETED){
+// 				throw new Error("User is Deleted");
 				
-			}
-			user = await prisma.user.update({
-				where :{
-					id : ifTouristExiswithCredentials.id,
+// 			}
+// 			user = await prisma.user.update({
+// 				where :{
+// 					id : ifTouristExiswithCredentials.id,
 
-				},
-				data: {
-					googleId: googleIdTOkenPayload.sub
-				}
-			})
+// 				},
+// 				data: {
+// 					googleId: googleIdTOkenPayload.sub
+// 				}
+// 			})
 
-		}
-		else{
-			//Google Register
-				user= await prisma.user.create({
-			data:{
-				name: googleIdTOkenPayload.name,
-				email: googleIdTOkenPayload.email,
-				status: UserStatus.PENDING,
-				role: Role.TOURIST,
-				googleId : googleIdTOkenPayload.sub,
-				authProvider : AuthProvider.GOOGLE,
-				emailVerified: true,
-				tourist :{
-					create :{
-						name : googleIdTOkenPayload.name,
-						email : googleIdTOkenPayload.email,
-					}
-				}
+// 		}
+// 		else{
+// 			//Google Register
+// 				user= await prisma.user.create({
+// 			data:{
+// 				name: googleIdTOkenPayload.name,
+// 				email: googleIdTOkenPayload.email,
+// 				status: UserStatus.PENDING,
+// 				role: Role.TOURIST,
+// 				googleId : googleIdTOkenPayload.sub,
+// 				authProvider : AuthProvider.GOOGLE,
+// 				emailVerified: true,
+// 				tourist :{
+// 					create :{
+// 						name : googleIdTOkenPayload.name,
+// 						email : googleIdTOkenPayload.email,
+// 					}
+// 				}
 				
 
-			}
-		})
+// 			}
+// 		})
 
-		const tempatePath = path.join(process.cwd(),"src/app/templates/patient-welcome-email.ejs")
-		const html =await ejs.renderFile(tempatePath,{
-			name : user.name,
+// 		const tempatePath = path.join(process.cwd(),"src/app/templates/patient-welcome-email.ejs")
+// 		const html =await ejs.renderFile(tempatePath,{
+// 			name : user.name,
 			
 
-		})
+// 		})
 
-		 await transporter.sendMail({
-			from :config.email_sender,
-			to:user.email,
-			subject: "Welcome tO Tourist System Guide ",
+// 		 await transporter.sendMail({
+// 			from :config.email_sender,
+// 			to:user.email,
+// 			subject: "Welcome tO Tourist System Guide ",
 	
-			html
-		 })
-		}
+// 			html
+// 		 })
+// 		}
 
 
 		
-	}
+// 	}
 
 
-	if(!user){
-		throw new Error("User not found");
+// 	if(!user){
+// 		throw new Error("User not found");
 		
-	}
-	if(user.status ===UserStatus.BLOCKED){
-		throw new Error("User not found");
+// 	}
+// 	if(user.status ===UserStatus.BLOCKED){
+// 		throw new Error("User not found");
 		
-	}
+// 	}
 	
-	if(user.isDeleted ||user.status ===UserStatus.DELETED){
-		throw new Error("User not found");
+// 	if(user.isDeleted ||user.status ===UserStatus.DELETED){
+// 		throw new Error("User not found");
 		
-	}
+// 	}
 
 	
 
 
 	
-	const jwtPayload = {
-		userId: user.id,
-		name: user.name,
-		email: user.email,
-		role: user.role,
-	};
+// 	const jwtPayload = {
+// 		userId: user.id,
+// 		name: user.name,
+// 		email: user.email,
+// 		role: user.role,
+// 	};
 
-	const accessToken = jwtUtils.createToken(
-		jwtPayload,
-		config.jwt_access_secret,
-		config.jwt_access_expires_in as SignOptions,
-	);
+// 	const accessToken = jwtUtils.createToken(
+// 		jwtPayload,
+// 		config.jwt_access_secret,
+// 		config.jwt_access_expires_in as SignOptions,
+// 	);
 
-	const refreshToken = jwtUtils.createToken(
-		jwtPayload,
-		config.jwt_refresh_secret,
-		config.jwt_refresh_expires_in as SignOptions,
-	);
+// 	const refreshToken = jwtUtils.createToken(
+// 		jwtPayload,
+// 		config.jwt_refresh_secret,
+// 		config.jwt_refresh_expires_in as SignOptions,
+// 	);
 
-	return {
-		accessToken,
-		refreshToken,
-	};
+// 	return {
+// 		accessToken,
+// 		refreshToken,
+// 	};
 	
 	
 
-	}
+// 	}
+
+
+
+
+
+// =============================================
+// ========== GOOGLE CLIENT INIT ==========
+// =============================================
+
+
+// =============================================
+// ========== GOOGLE LOGIN ==========
+// =============================================
+const googleLogin = async (payload: IGoogleLoginPayload) => {
+  const { idToken } = payload;
+
+  // 1. idToken check
+  if (!idToken) {
+    throw new AppError(httpStatus.BAD_REQUEST, "idToken is required");
+  }
+
+  // 2. Verify Google token
+  let googlePayload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: config.google_client_id,
+    });
+    googlePayload = ticket.getPayload();
+  } catch (error: any) {
+    console.log("=== Google Verify Error ===");
+    console.log("Error name:", error?.name);
+    console.log("Error message:", error?.message);
+    throw new AppError(
+      httpStatus.UNAUTHORIZED,
+      `Google token verification failed: ${error?.message || "Unknown error"}`
+    );
+  }
+
+  // 3. Payload check
+  if (!googlePayload?.email) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Email not found in Google token");
+  }
+  if (!googlePayload?.sub) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Google ID not found");
+  }
+
+  const { email, name, sub: googleId, picture } = googlePayload;
+
+  // 4. Existing user check (by email)
+  let user = await prisma.user.findUnique({
+    where: { email },
+    include: {
+      tourist: true,
+      guide: true,
+    },
+  });
+
+  // 5. User nei — notun create koro
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        name: name || email.split("@")[0],
+        email,
+        googleId,
+        authProvider: AuthProvider.GOOGLE,
+        role: Role.TOURIST,
+        status: UserStatus.ACTIVE,       // Google e email verified, tai ACTIVE
+        emailVerified: true,
+        imageUrl: picture || "",
+        tourist: {
+          create: {
+            name: name || email.split("@")[0],
+            email,
+          },
+        },
+      },
+      include: {
+        tourist: true,
+        guide: true,
+      },
+    });
+
+    console.log(" New user created via Google:", user.email);
+  }
+  // 6. User ache — update koro
+  else {
+    // Blocked check
+    if (user.status === UserStatus.BLOCKED) {
+      throw new AppError(httpStatus.FORBIDDEN, "Your account is blocked");
+    }
+
+    // Deleted check
+    if (user.isDeleted || user.status === UserStatus.DELETED) {
+      throw new AppError(httpStatus.FORBIDDEN, "Your account is deleted");
+    }
+
+    // Google ID update koro (jodi age CREDENTIAL chilo)
+    if (!user.googleId) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId,
+          authProvider: AuthProvider.GOOGLE,
+          emailVerified: true,
+          imageUrl: user.imageUrl || picture || "",
+        },
+        include: {
+          tourist: true,
+          guide: true,
+        },
+      });
+    }
+  }
+
+  // 7. JWT payload
+  const jwtPayload = {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+
+  // 8. Tokens generate
+  const accessToken = jwtUtils.createToken(
+    jwtPayload,
+    config.jwt_access_secret,
+    config.jwt_access_expires_in as SignOptions
+  );
+
+  const refreshToken = jwtUtils.createToken(
+    jwtPayload,
+    config.jwt_refresh_secret,
+    config.jwt_refresh_expires_in as SignOptions
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      imageUrl: user.imageUrl,
+    },
+  };
+};
+
+
 
 
 

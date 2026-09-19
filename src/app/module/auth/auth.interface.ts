@@ -68,3 +68,18 @@ export interface IVerifyEmailPayload {
 	email: string;
 	otp:string;
 }
+
+
+
+
+export interface IGoogleLoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    imageUrl: string;
+  };
+}

@@ -9,7 +9,7 @@ import { AppError } from "../../utils/AppError";
 import { GuideServices } from "../guide/guide.service";
 
 
-// ===== CREATE AVAILABILITY =====
+// CREATE AVAILABILITY 
 const createAvailability = catchAsync(async (req: Request & { user?: any }, res: Response) => {
   const guideId = req.user?.userId;
   const payload = req.body;
@@ -24,7 +24,7 @@ const createAvailability = catchAsync(async (req: Request & { user?: any }, res:
   });
 });
 
-// ===== GET AVAILABILITY BY GUIDE =====
+//  GET AVAILABILITY BY GUIDE 
 const getAvailabilityByGuide = catchAsync(async (req: Request, res: Response) => {
   const result = await AvailabilityServices.getAvailabilityByGuide(req.query);
 
@@ -94,11 +94,6 @@ const getAvailabilityByPackage = catchAsync(async (req: Request, res: Response) 
 });
 
 
-// controllers/guide.controller.ts
-
-// ... আগের function গুলো
-
-// ===== 4. Get All Availability =====
 const getAllAvailability = async (req: Request, res: Response) => {
   try {
     const user = req.user ;

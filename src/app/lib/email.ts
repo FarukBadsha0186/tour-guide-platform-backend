@@ -30,7 +30,6 @@ export const sendEmailWithAttachment = async ({
   pdfFileName,
 }: ISendEmailWithAttachment): Promise<boolean> => {
   try {
-    // ✅ Multiple paths for different environments
     const possiblePaths = [
       // Path 1: From lib to templates (development - src/app/lib)
       path.join(__dirname, "..", "templates", `${templateName}.ejs`),
@@ -69,22 +68,21 @@ export const sendEmailWithAttachment = async ({
     
     possiblePaths.forEach((p, i) => {
       const exists = fs.existsSync(p);
-      console.log(`  Path ${i + 1}: ${p} ${exists ? "✅ EXISTS" : "❌"}`);
+      console.log(`  Path ${i + 1}: ${p} ${exists ? " EXISTS" : ""}`);
     });
 
-    // ✅ Find first existing path
     const templatePath = possiblePaths.find((p) => fs.existsSync(p));
 
     if (!templatePath) {
-      console.error(`❌ Template ${templateName}.ejs not found in any path`);
+      console.error(` Template ${templateName}.ejs not found in any path`);
       throw new Error(
         `Template ${templateName}.ejs not found. Checked: ${possiblePaths.join(" | ")}`
       );
     }
 
-    console.log("📁 Using template path:", templatePath);
+    console.log(" Using template path:", templatePath);
 
-    // ✅ Render template with EJS
+    
     const html = await ejs.renderFile(templatePath, templateData);
 
     const mailOptions = {
@@ -102,10 +100,10 @@ export const sendEmailWithAttachment = async ({
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent to ${to}: ${info.messageId}`);
+    console.log(` Email sent to ${to}: ${info.messageId}`);
     return true;
   } catch (error: any) {
-    console.error(`❌ Email sending failed to ${to}:`, error.message);
+    console.error(` Email sending failed to ${to}:`, error.message);
     return false;
   }
 };
