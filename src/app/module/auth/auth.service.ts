@@ -418,7 +418,7 @@ import { AppError } from "../../utils/AppError";
           email: userPayload.email,
           password: userPayload.password,
           role: Role.GUIDE,
-          status: UserStatus.PENDING,
+          status: UserStatus.ACTIVE,
           emailVerified: true,
           guide: {
             create: {
@@ -536,9 +536,9 @@ const loginUser = async (payload: ILoginUserPayload) => {
 
 	}
 
-	if (user.status === UserStatus.PENDING) {
-  throw new Error("Your account is pending approval. Please wait for admin approval.");
-}
+// 	if (user.status === UserStatus.PENDING) {
+//   throw new Error("Your account is pending approval. Please wait for admin approval.");
+// }
 
 	if (user.password === null && user.googleId !== null){
 		throw new Error("User already Has Account Registerd With Google .Try to login with Google");
