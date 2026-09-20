@@ -12,16 +12,16 @@ router.use(auth(Role.TOURIST));
 
 router.post("/create/bookings",
     auth(Role.TOURIST),TouristController.createBooking);
-router.get("/packages", TouristController.getAllPackages);
+router.get("/packages", auth("TOURIST"), TouristController.getAllPackages);
 
     
-router.get("/availability", TouristController.getAllAvailability);
+router.get("/availability", auth("TOURIST"), TouristController.getAllAvailability);
 
-// ✅ 2. Get Only Available (isBooked: false)
-router.get("/availability/available", TouristController.getAvailableOnly);
+
+router.get("/availability/available", auth("TOURIST"), TouristController.getAvailableOnly);
   
-router.patch("/bookings/:bookingId/cancel", TouristController.cancelBooking); 
-router.get("/bookings", TouristController.getMyBookings);  
+router.patch("/bookings/:bookingId/cancel", auth("TOURIST"), TouristController.cancelBooking); 
+router.get("/bookings",  auth("TOURIST"),TouristController.getMyBookings);  
 router.post("/reviews", auth("TOURIST"),TouristController.createReview);
 
 
