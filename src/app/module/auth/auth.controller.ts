@@ -258,6 +258,21 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+const logout = catchAsync(async (req: Request, res: Response) => {
+
+	res.clearCookie("accessToken");
+	res.clearCookie("refreshToken");
+
+	
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "logout  successfully",
+		data: null
+	});
+});
+
 
 export const AuthController = {
 	registerTourist,
@@ -268,5 +283,6 @@ export const AuthController = {
 	refreshToken,
 	googleLogin,
 	forgotPassword,
-	resetPassword
+	resetPassword,
+	logout
 };
