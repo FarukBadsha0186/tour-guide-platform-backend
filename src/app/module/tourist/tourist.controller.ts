@@ -222,13 +222,7 @@ const getAllPackages = async (req: Request, res: Response) => {
   }
 };
 
-// controllers/tourist.controller.ts
 
-// ... আগের imports
-
-// =============================================
-// ===== 1. Get All Availability =====
-// =============================================
 const getAllAvailability = async (req: Request, res: Response) => {
   try {
     const query = {
