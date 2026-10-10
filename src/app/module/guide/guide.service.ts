@@ -44,19 +44,36 @@ const updateMyProfile = async (userId: string, payload: IUpdateGuideProfile, pro
   }
 
   // Update guide
-  const updatedGuide = await prisma.guide.update({
-    where: { userId },
-    data: updateData,
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-          imageUrl: true,  
-        },
-      },
-    },
-  });
+  // const updatedGuide = await prisma.guide.update({
+  //   where: { userId },
+  //   data: updateData,
+  //   include: {
+  //     user: {
+  //       select: {
+  //         name: true,
+  //         email: true,
+  //         imageUrl: true,  
+  //       },
+  //     },
+  //   },
+  // })
+  const updatedGuide: any = {
+  licenseNumber: payload.licenseNumber || undefined,
+  yearsExperience: payload.yearsExperience 
+    ? Number(payload.yearsExperience) 
+    : 0,
+  languages: typeof payload.languages === "string"
+    ? JSON.parse(payload.languages)
+    : (payload.languages || []),
+  baseLocation: payload.baseLocation || undefined,
+  bio: payload.bio || undefined,
+  hourlyRate: payload.hourlyRate 
+    ? Number(payload.hourlyRate) 
+    : null,
+};
+  
+  
+  ;
 
   return updatedGuide;
 };
