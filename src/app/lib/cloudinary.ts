@@ -64,3 +64,14 @@ export const uploadToCloudinary = (
     uploadStream.end(fileBuffer);
   });
 };
+
+
+
+export const deleteFromCloudinary = async (publicId: string) => {
+  if (!publicId) return;
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    console.error("Failed to delete image from Cloudinary:", error);
+  }
+};

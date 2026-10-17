@@ -15,25 +15,54 @@ import { AppError } from "../../utils/AppError";
 // ===== UPDATE GUIDE PROFILE (WITH IMAGE) =====
 
 
+// const updateMyProfile = catchAsync(async (req: Request & { user?: any }, res: Response) => {
+//   const userId = req.user?.userId;
+
+
+//   let payload = req.body;
+//   if (req.body.guideData) {
+//     payload = JSON.parse(req.body.guideData);
+//   }
+
+//   let profileImageUrl: string | undefined;
+
+  
+//   if (req.file) {
+//     const result = await uploadToCloudinary(req.file.buffer, "guide-profiles");
+//     profileImageUrl = result.secure_url;
+//   }
+
+//   // 
+//   const result = await GuideServices.updateMyProfile(userId, payload, profileImageUrl);
+
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     success: true,
+//     message: "Guide profile updated successfully",
+//     data: result,
+//   });
+// });
+
 const updateMyProfile = catchAsync(async (req: Request & { user?: any }, res: Response) => {
   const userId = req.user?.userId;
-
 
   let payload = req.body;
   if (req.body.guideData) {
     payload = JSON.parse(req.body.guideData);
   }
 
-  let profileImageUrl: string | undefined;
+  // ✅ Ei variable ta ekhon object hold korbe (url + publicId)
+  let profileImageData: { url: string; publicId: string } | undefined;
 
-  
   if (req.file) {
     const result = await uploadToCloudinary(req.file.buffer, "guide-profiles");
-    profileImageUrl = result.secure_url;
+    profileImageData = {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
   }
 
-  // 
-  const result = await GuideServices.updateMyProfile(userId, payload, profileImageUrl);
+  const result = await GuideServices.updateMyProfile(userId, payload, profileImageData);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -42,6 +71,8 @@ const updateMyProfile = catchAsync(async (req: Request & { user?: any }, res: Re
     data: result,
   });
 });
+
+
 
 // ===== GET MY PROFILE =====
 const getMyProfile = catchAsync(async (req: Request & { user?: any }, res: Response) => {

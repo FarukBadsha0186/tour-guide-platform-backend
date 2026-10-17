@@ -9,21 +9,78 @@ import { ICreatePackagePayload, IGuideBookingQuery, IPackageFilter, IUpdateBooki
 import { sendEmailWithAttachment } from "../../lib/nodemailer";
 import { generateInvoicePDF } from "../../lib/pdf";
 import { PaymentService } from "../payment/payement.service";
+import { deleteFromCloudinary } from "../../lib/cloudinary";
 
 
 
 // guide.service.ts - Update profile
-const updateMyProfile = async (userId: string, payload: IUpdateGuideProfile, profileImage?: string) => {
+// const updateMyProfile = async (userId: string, payload: IUpdateGuideProfile, profileImage?: string) => {
+  
+//   const existingGuide = await prisma.guide.findUnique({
+//     where: { userId },
+//   });
+
+//   if (!existingGuide) {
+//     throw new Error("Guide profile not found");
+//   }
+
+//   //  Update Guide data
+//   const updateData: any = {
+//     licenseNumber: payload.licenseNumber,
+//     yearsExperience: payload.yearsExperience,
+//     languages: payload.languages,
+//     baseLocation: payload.baseLocation,
+//     bio: payload.bio,
+//     hourlyRate: payload.hourlyRate,
+//   };
+
+  
+//   if (profileImage) {
+//     await prisma.user.update({
+//       where: { id: userId },
+//       data: {
+//         imageUrl: profileImage,
+//       },
+//     });
+//   }
+
+//   // Update guide
+//   const updatedGuide = await prisma.guide.update({
+//     where: { userId },
+//     data: updateData,
+//     include: {
+//       user: {
+//         select: {
+//           name: true,
+//           email: true,
+//           imageUrl: true,  
+//         },
+//       },
+//     },
+//   })
+
+  
+  
+//   ;
+
+//   return updatedGuide;
+// };
+
+const updateMyProfile = async (
+  userId: string,
+  payload: IUpdateGuideProfile,
+  profileImageData?: { url: string; publicId: string } 
+) => {
   
   const existingGuide = await prisma.guide.findUnique({
     where: { userId },
+    include: { user: true }, 
   });
 
   if (!existingGuide) {
     throw new Error("Guide profile not found");
   }
 
-  //  Update Guide data
   const updateData: any = {
     licenseNumber: payload.licenseNumber,
     yearsExperience: payload.yearsExperience,
@@ -33,17 +90,24 @@ const updateMyProfile = async (userId: string, payload: IUpdateGuideProfile, pro
     hourlyRate: payload.hourlyRate,
   };
 
-  
-  if (profileImage) {
+  // ✅ Image update logic (Purano delete + Notun update)
+  if (profileImageData) {
+    // 1. Purano image thakle seta delete koro
+    if (existingGuide.user.imagePublicId) {
+      await deleteFromCloudinary(existingGuide.user.imagePublicId);
+    }
+
+    
     await prisma.user.update({
       where: { id: userId },
       data: {
-        imageUrl: profileImage,
+        imageUrl: profileImageData.url,
+        imagePublicId: profileImageData.publicId,
       },
     });
   }
 
-  // Update guide
+  // Guide update koro
   const updatedGuide = await prisma.guide.update({
     where: { userId },
     data: updateData,
@@ -52,31 +116,16 @@ const updateMyProfile = async (userId: string, payload: IUpdateGuideProfile, pro
         select: {
           name: true,
           email: true,
-          imageUrl: true,  
+          imageUrl: true,
         },
       },
     },
-  })
-//   const updatedGuide: any = {
-//   licenseNumber: payload.licenseNumber || undefined,
-//   yearsExperience: payload.yearsExperience 
-//     ? Number(payload.yearsExperience) 
-//     : 0,
-//   languages: typeof payload.languages === "string"
-//     ? JSON.parse(payload.languages)
-//     : (payload.languages || []),
-//   baseLocation: payload.baseLocation || undefined,
-//   bio: payload.bio || undefined,
-//   hourlyRate: payload.hourlyRate 
-//     ? Number(payload.hourlyRate) 
-//     : null,
-// };
-  
-  
-  ;
+  });
 
   return updatedGuide;
 };
+
+
 
 // ===== GET MY PROFILE =====
 const getMyProfile = async (userId: string) => {
