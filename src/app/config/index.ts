@@ -30,6 +30,9 @@ export default {
 	tester_tourist_email: process.env.TESTER_TOURIST_EMAIL!,
 	tester_tourist_password: process.env.TESTER_TOURIST_PASSWORD!,
 
+	gemini_api_key: process.env.GEMINI_API_KEY,
+	groq_api_key: process.env.GROQ_API_KEY,
+
 
 
 

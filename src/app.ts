@@ -18,6 +18,7 @@ import { paymentRouter } from "./app/module/payment/payment.router";
 import { TouristRouter } from "./app/module/tourist/tourist.route";
 import { adminRouter } from "./app/module/admin/admin.route";
 import { publicRouter } from "./app/module/public/public.route";
+import { AiRoutes } from "./app/module/ai/ai.route";
 
 
 
@@ -49,6 +50,7 @@ app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/tourist", TouristRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/public", publicRouter);
+app.use("/api/v1/ai", AiRoutes);
 app.use("/zod", async (req: Request, res: Response , next: NextFunction) => {
 	try {
 		const UserzodSchema = z.object([{

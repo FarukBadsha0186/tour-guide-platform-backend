@@ -13,6 +13,7 @@ node_modules/
 # Build Output
 build/
 out/
+dist/
 
 # Prisma Generated
 src/generated/prisma/
