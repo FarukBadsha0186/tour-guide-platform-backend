@@ -10,13 +10,10 @@ import {
 import {
   IPublicPackageQuery,
   IPublicGuideQuery,
+  IPublicReviewQuery,
 } from "./public.interface";
 
-// =============================================
-// ========== PUBLIC SERVICE METHODS ==========
-// =============================================
 
-// ===== 1. Get All Guides (Public) =====
 const getAllGuides = async (query: IPublicGuideQuery) => {
   try {
     const limit = query.limit ? Number(query.limit) : 10;
@@ -300,6 +297,15 @@ const searchPackages = async (query: IPublicPackageQuery) => {
       },
     ];
 
+
+     if (query.guideId) {
+      andConditions.push({ guideId: query.guideId });
+    }
+
+    // ✅ Exclude current package (for related)
+    if (query.excludeId) {
+      andConditions.push({ id: { not: query.excludeId } });
+    }
     // ✅ Search by title or description
     if (query.search) {
       andConditions.push({
@@ -401,11 +407,100 @@ const searchPackages = async (query: IPublicPackageQuery) => {
   }
 };
 
-// =============================================
-// ========== EXPORT =============
-// =============================================
+// ===== 4. Get Reviews by Guide (NEW) =====
+const getReviewsByGuide = async (
+  guideId: string,
+  query: IPublicReviewQuery
+) => {
+  try {
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const skip = (page - 1) * limit;
+    const sortOrder = query.sortOrder || "desc";
+
+    // 1. Verify guide exists and is approved
+    const guide = await prisma.guide.findUnique({
+      where: { id: guideId, isApproved: true },
+      select: {
+        id: true,
+        rating: true,
+        totalReviews: true,
+        user: { select: { name: true } },
+      },
+    });
+
+    if (!guide) {
+      throw new AppError(httpStatus.NOT_FOUND, "Guide not found");
+    }
+
+    // 2. Fetch reviews (paginated)
+    const reviews = await prisma.review.findMany({
+      where: { guideId, isDeleted: false },
+      take: limit,
+      skip,
+      orderBy: { createdAt: sortOrder as "asc" | "desc" },
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        images: true,
+        createdAt: true,
+        tourist: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+          },
+        },
+      },
+    });
+
+    // 3. Rating distribution (5 star, 4 star, etc.)
+    const distributionRaw = await prisma.review.groupBy({
+      by: ["rating"],
+      where: { guideId, isDeleted: false },
+      _count: { rating: true },
+    });
+
+    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    distributionRaw.forEach((item) => {
+      distribution[item.rating] = item._count.rating;
+    });
+
+    // 4. Total count
+    const total = await prisma.review.count({
+      where: { guideId, isDeleted: false },
+    });
+
+    return {
+      data: {
+        guide: {
+          name: guide.user?.name,
+          rating: guide.rating,
+          totalReviews: guide.totalReviews,
+        },
+        reviews,
+        stats: {
+          averageRating: guide.rating,
+          totalReviews: guide.totalReviews,
+          distribution,
+        },
+      },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
 export const PublicService = {
   getAllGuides,
   getAllPackages,
   searchPackages,
+  getReviewsByGuide
 };
