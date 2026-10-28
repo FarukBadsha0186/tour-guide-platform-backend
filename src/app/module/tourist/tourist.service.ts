@@ -226,7 +226,7 @@ const createReview = async (
   reviewData: ICreateReview
 ) => {
   try {
-    const { bookingId, rating, comment, images } = reviewData;
+    const { packageId, rating, comment, images } = reviewData;
 
     // 1. Validate rating
     if (rating < 1 || rating > 5) {
@@ -257,7 +257,7 @@ const createReview = async (
 
     // 3. Check booking exists
     const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
+      where: { id: packageId },
       include: {
         review: true,
         guide: {

@@ -35,3 +35,14 @@ export interface IPublicReviewQuery {
   sortBy?: string;
   sortOrder?: string;
 }
+
+
+// src/app/module/public/public.interface.ts
+
+// ===== Review Query (add alongside existing) =====
+export interface IPublicReviewQuery {
+  limit?: number;
+  page?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}

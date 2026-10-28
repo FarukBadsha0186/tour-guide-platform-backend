@@ -9,6 +9,6 @@ router.get("/guides", PublicController.getAllGuides);
 router.get("/packages", PublicController.getAllPackages);
 
 router.get("/packages/search", PublicController.searchPackages);
-router.get("/reviews/guide/:guideId", PublicController.getReviewsByGuide);
-
+router.get("/reviews/package/:packageId", PublicController.getReviewsByGuide);
+router.get("/reviews/package/:packageId", PublicController.getReviewsByPackage)
 export const publicRouter = router;

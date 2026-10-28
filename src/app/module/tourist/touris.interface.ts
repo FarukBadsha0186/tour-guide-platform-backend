@@ -18,7 +18,7 @@ export interface ICreateBooking {
 }
 
 export interface ICreateReview {
-  bookingId: string;
+  packageId: string;
   rating: number;
   comment?: string;
   images?: string[];

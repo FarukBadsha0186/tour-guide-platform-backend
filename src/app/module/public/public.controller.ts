@@ -95,7 +95,7 @@ const searchPackages = async (req: Request, res: Response) => {
       maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
       minDuration: req.query.minDuration ? parseInt(req.query.minDuration as string) : undefined,
       maxDuration: req.query.maxDuration ? parseInt(req.query.maxDuration as string) : undefined,
-      guideId: req.query.guideId as string,
+      guideId: req.query.guideId as string,         
       excludeId: req.query.excludeId as string, 
     };
 
@@ -163,9 +163,53 @@ const getReviewsByGuide = async (req: Request, res: Response) => {
     }
   }
 };
+
+
+// ===== 5. Get Reviews by Package (NEW) =====
+const getReviewsByPackage = async (req: Request, res: Response) => {
+  try {
+    const { packageId } = req.params;
+
+    if (!packageId) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Package ID is required");
+    }
+
+    const query = {
+      limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
+      page: req.query.page ? parseInt(req.query.page as string) : 1,
+      sortBy: (req.query.sortBy as string) || "createdAt",
+      sortOrder: (req.query.sortOrder as string) || "desc",
+    };
+
+    const result = await PublicService.getReviewsByPackage(
+      packageId as string,
+      query
+    );
+
+    res.status(httpStatus.OK).json({
+      success: true,
+      message: "Package reviews retrieved successfully",
+      data: result.data,
+      meta: result.meta,
+    });
+  } catch (error: any) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    } else {
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: error.message || "Something went wrong",
+      });
+    }
+  }
+};
 export const PublicController = {
   getAllGuides,
   getAllPackages,
   searchPackages,
-  getReviewsByGuide
+  getReviewsByGuide,
+   getReviewsByPackage, 
 };

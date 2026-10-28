@@ -498,9 +498,127 @@ const getReviewsByGuide = async (
     throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
   }
 };
+
+
+// ===== 5. Get Reviews by Package (NEW) =====
+const getReviewsByPackage = async (
+  packageId: string,
+  query: IPublicReviewQuery
+) => {
+  try {
+    const limit = query.limit ? Number(query.limit) : 10;
+    const page = query.page ? Number(query.page) : 1;
+    const skip = (page - 1) * limit;
+    const sortOrder = query.sortOrder || "desc";
+
+    // 1. Verify package exists and is approved
+    const pkg = await prisma.tourPackage.findUnique({
+      where: { id: packageId, isDeleted: false },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        guide: {
+          select: {
+            id: true,
+            rating: true,
+            totalReviews: true,
+            user: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    if (!pkg) {
+      throw new AppError(httpStatus.NOT_FOUND, "Package not found");
+    }
+
+    // 2. Fetch reviews (through booking relation)
+    const reviews = await prisma.review.findMany({
+      where: {
+        isDeleted: false,
+        booking: { packageId },
+      },
+      take: limit,
+      skip,
+      orderBy: { createdAt: sortOrder as "asc" | "desc" },
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        images: true,
+        createdAt: true,
+        tourist: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+          },
+        },
+      },
+    });
+
+    // 3. Rating distribution
+    const distributionRaw = await prisma.review.groupBy({
+      by: ["rating"],
+      where: {
+        isDeleted: false,
+        booking: { packageId },
+      },
+      _count: { rating: true },
+    });
+
+    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    distributionRaw.forEach((item) => {
+      distribution[item.rating] = item._count.rating;
+    });
+
+    // 4. Calculate stats
+    const total = await prisma.review.count({
+      where: { isDeleted: false, booking: { packageId } },
+    });
+
+    const weightedSum = Object.entries(distribution).reduce(
+      (sum, [star, count]) => sum + Number(star) * count,
+      0
+    );
+    const averageRating = total > 0 ? Number((weightedSum / total).toFixed(2)) : 0;
+
+    return {
+      data: {
+        package: {
+          id: pkg.id,
+          title: pkg.title,
+        },
+        guide: {
+          id: pkg.guide.id,
+          name: pkg.guide.user?.name,
+          rating: pkg.guide.rating,
+          totalReviews: pkg.guide.totalReviews,
+        },
+        reviews,
+        stats: {
+          averageRating,
+          totalReviews: total,
+          distribution,
+        },
+      },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error: any) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+  }
+};
 export const PublicService = {
   getAllGuides,
   getAllPackages,
   searchPackages,
-  getReviewsByGuide
+  getReviewsByGuide,
+  getReviewsByPackage
 };
