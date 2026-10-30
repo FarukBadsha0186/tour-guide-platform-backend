@@ -24,7 +24,7 @@ import { email } from "zod";
 
 import crypto from "crypto";
 import { redisclient } from "../../lib/redis";
-import { transporter } from "../../lib/nodemailer";
+//import { transporter } from "../../lib/nodemailer";
 import { configDotenv } from "dotenv";
 import { AppError } from "../../utils/AppError";
 
@@ -278,12 +278,12 @@ import { AppError } from "../../utils/AppError";
       expirationMinutes: expirationSeconds / 60,
     });
 
-    await transporter.sendMail({
-      from: config.email_sender,
-      to: email,
-      subject: "Email Verification",
-      html,
-    });
+    // await transporter.sendMail({
+    //   from: config.email_sender,
+    //   to: email,
+    //   subject: "Email Verification",
+    //   html,
+    // });
 
     return {
       success: true,
@@ -347,12 +347,12 @@ import { AppError } from "../../utils/AppError";
       expirationMinutes: expirationSeconds / 60,
     });
 
-    await transporter.sendMail({
-      from: config.email_sender,
-      to: email,
-      subject: "Email Verification - Guide Registration",
-      html,
-    });
+    // await transporter.sendMail({
+    //   from: config.email_sender,
+    //   to: email,
+    //   subject: "Email Verification - Guide Registration",
+    //   html,
+    // });
 
     return {
       success: true,
@@ -473,12 +473,12 @@ import { AppError } from "../../utils/AppError";
         role: createdUser.role,
       });
 
-      await transporter.sendMail({
-        from: config.email_sender,
-        to: email,
-        subject: "Welcome to Tour Guide Platform",
-        html,
-      });
+      // await transporter.sendMail({
+      //   from: config.email_sender,
+      //   to: email,
+      //   subject: "Welcome to Tour Guide Platform",
+      //   html,
+      // });
     } catch (emailError) {
       console.error("Email sending failed:", emailError);
     }
@@ -1013,13 +1013,13 @@ const googleLogin = async (payload: IGoogleLoginPayload) => {
 
 		})
 
-		 await transporter.sendMail({
-			from :config.email_sender,
-			to:IsExitUser.email,
-			subject: "Forget Password",
-			//text: `Your OTP is ${otp}`
-			html
-		 })
+		//  await transporter.sendMail({
+		// 	from :config.email_sender,
+		// 	to:IsExitUser.email,
+		// 	subject: "Forget Password",
+		// 	//text: `Your OTP is ${otp}`
+		// 	html
+		//  })
 
 
 
@@ -1096,13 +1096,13 @@ const googleLogin = async (payload: IGoogleLoginPayload) => {
 
 		})
 
-		 await transporter.sendMail({
-			from :config.email_sender,
-			to:IsExitUser.email,
-			subject: "Forget Password",
-			//text: `Your OTP is ${otp}`
-			html
-		 })
+		//  await transporter.sendMail({
+		// 	from :config.email_sender,
+		// 	to:IsExitUser.email,
+		// 	subject: "Forget Password",
+		// 	//text: `Your OTP is ${otp}`
+		// 	html
+		//  })
 
 
 		
