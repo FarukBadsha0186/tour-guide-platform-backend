@@ -221,14 +221,176 @@ const createBooking = async (bookingData: ICreateBooking) => {
 };
 
 
+// const createReview = async (
+//   userId: string,
+//   reviewData: ICreateReview
+// ) => {
+//   try {
+//     const { packageId, rating, comment, images } = reviewData;
+
+//     // 1. Validate rating
+//     if (rating < 1 || rating > 5) {
+//       throw new AppError(
+//         httpStatus.BAD_REQUEST,
+//         "Rating must be between 1 and 5"
+//       );
+//     }
+
+//     // 2. Check tourist profile
+//     const tourist = await prisma.tourist.findUnique({
+//       where: { userId },
+//       include: {
+//         user: {
+//           select: {
+//             id: true,
+//             name: true,
+//             email: true,
+//             imageUrl: true,
+//           },
+//         },
+//       },
+//     });
+
+//     if (!tourist) {
+//       throw new AppError(httpStatus.NOT_FOUND, "Tourist profile not found");
+//     }
+
+//     // 3. Check booking exists
+//     const booking = await prisma.review.findUnique({
+//       where: { id:  },
+//       include: {
+//         review: true,
+//         guide: {
+//           include: {
+//             user: {
+//               select: {
+//                 id: true,
+//                 name: true,
+//                 email: true,
+//                 imageUrl: true,
+//               },
+//             },
+//           },
+//         },
+//       },
+//     });
+
+//     if (!booking) {
+//       throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
+//     }
+
+//     // 4. Authorization - Only tourist who booked
+//     if (booking.touristId !== tourist.id) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "You can only review your own bookings"
+//       );
+//     }
+
+//     // 5. Only COMPLETED bookings can be reviewed
+//     if (booking.status !== BookingStatus.COMPLETED) {
+//       throw new AppError(
+//         httpStatus.BAD_REQUEST,
+//         "You can only review completed bookings"
+//       );
+//     }
+
+//     // 6. Check if review already exists
+//     if (booking.review) {
+//       throw new AppError(
+//         httpStatus.BAD_REQUEST,
+//         "You have already reviewed this booking"
+//       );
+//     }
+
+//     // 7. Create review + Update guide rating (transaction)
+//     const result = await prisma.$transaction(async (tx) => {
+//       // 7.1 Create review
+//       const review = await tx.review.create({
+//         data: {
+//           bookingId,
+//           touristId: tourist.userId,
+//           guideId: booking.guideId,
+//           rating,
+//           comment: comment || null,
+//           images: images || [],
+//         },
+//         include: {
+//           tourist: {
+//             select: {
+//               id: true,
+//               name: true,
+//               email: true,
+//               imageUrl: true,
+//             },
+//           },
+//           guide: {
+//             include: {
+//               user: {
+//                 select: {
+//                   id: true,
+//                   name: true,
+//                   email: true,
+//                   imageUrl: true,
+//                 },
+//               },
+//             },
+//           },
+//           booking: {
+//             select: {
+//               id: true,
+//               bookingReference: true,
+//               tourDate: true,
+//             },
+//           },
+//         },
+//       });
+
+//       // 7.2 Calculate new guide rating
+//       const allReviews = await tx.review.findMany({
+//         where: {
+//           guideId: booking.guideId,
+//           isDeleted: false,
+//         },
+//         select: {
+//           rating: true,
+//         },
+//       });
+
+//       const totalReviews = allReviews.length;
+//       const avgRating =
+//         allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
+
+//       // 7.3 Update guide rating
+//       await tx.guide.update({
+//         where: { id: booking.guideId },
+//         data: {
+//           rating: Number(avgRating.toFixed(2)),
+//           totalReviews: totalReviews,
+//         },
+//       });
+
+//       return review;
+//     });
+
+//     return result;
+//   } catch (error: any) {
+//     if (error instanceof AppError) throw error;
+//     throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+//   }
+// };
+
 const createReview = async (
   userId: string,
   reviewData: ICreateReview
 ) => {
   try {
-    const { packageId, rating, comment, images } = reviewData;
+    const { bookingId, rating, comment, images } = reviewData;
 
-    // 1. Validate rating
+    // 1. Validate
+    if (!bookingId) {
+      throw new AppError(httpStatus.BAD_REQUEST, "bookingId is required");
+    }
     if (rating < 1 || rating > 5) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -239,47 +401,23 @@ const createReview = async (
     // 2. Check tourist profile
     const tourist = await prisma.tourist.findUnique({
       where: { userId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            imageUrl: true,
-          },
-        },
-      },
     });
 
     if (!tourist) {
       throw new AppError(httpStatus.NOT_FOUND, "Tourist profile not found");
     }
 
-    // 3. Check booking exists
+    // 3. Check booking
     const booking = await prisma.booking.findUnique({
-      where: { id: packageId },
-      include: {
-        review: true,
-        guide: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                imageUrl: true,
-              },
-            },
-          },
-        },
-      },
+      where: { id: bookingId },
+      include: { review: true },
     });
 
     if (!booking) {
       throw new AppError(httpStatus.NOT_FOUND, "Booking not found");
     }
 
-    // 4. Authorization - Only tourist who booked
+    // 4. Authorization
     if (booking.touristId !== tourist.id) {
       throw new AppError(
         httpStatus.FORBIDDEN,
@@ -287,7 +425,7 @@ const createReview = async (
       );
     }
 
-    // 5. Only COMPLETED bookings can be reviewed
+    // 5. Must be COMPLETED
     if (booking.status !== BookingStatus.COMPLETED) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -295,7 +433,7 @@ const createReview = async (
       );
     }
 
-    // 6. Check if review already exists
+    // 6. Already reviewed?
     if (booking.review) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -303,9 +441,8 @@ const createReview = async (
       );
     }
 
-    // 7. Create review + Update guide rating (transaction)
+    // 7. Transaction: create review + update guide rating
     const result = await prisma.$transaction(async (tx) => {
-      // 7.1 Create review
       const review = await tx.review.create({
         data: {
           bookingId,
@@ -317,22 +454,12 @@ const createReview = async (
         },
         include: {
           tourist: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              imageUrl: true,
-            },
+            select: { id: true, name: true, email: true, imageUrl: true },
           },
           guide: {
             include: {
               user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  imageUrl: true,
-                },
+                select: { id: true, name: true, email: true, imageUrl: true },
               },
             },
           },
@@ -341,32 +468,29 @@ const createReview = async (
               id: true,
               bookingReference: true,
               tourDate: true,
+              package: { select: { id: true, title: true } },
             },
           },
         },
       });
 
-      // 7.2 Calculate new guide rating
+      // Calculate new guide rating
       const allReviews = await tx.review.findMany({
-        where: {
-          guideId: booking.guideId,
-          isDeleted: false,
-        },
-        select: {
-          rating: true,
-        },
+        where: { guideId: booking.guideId, isDeleted: false },
+        select: { rating: true },
       });
 
       const totalReviews = allReviews.length;
       const avgRating =
-        allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
+        totalReviews > 0
+          ? allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+          : 0;
 
-      // 7.3 Update guide rating
       await tx.guide.update({
         where: { id: booking.guideId },
         data: {
           rating: Number(avgRating.toFixed(2)),
-          totalReviews: totalReviews,
+          totalReviews,
         },
       });
 
@@ -379,7 +503,6 @@ const createReview = async (
     throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
   }
 };
-
 
 const cancelBooking = async (
   bookingId: string,

@@ -17,13 +17,6 @@ export interface ICreateBooking {
   specialRequests?: string;
 }
 
-export interface ICreateReview {
-  bookingId: string; 
-  packageId: string;
-  rating: number;
-  comment?: string;
-  images?: string[];
-}
 
 // ===== Review Query =====
 export interface IReviewQuery {
@@ -112,3 +105,9 @@ export interface IAvailableOnlyQuery {
 }
 
 
+export interface ICreateReview {
+  bookingId: string;  
+  rating: number;
+  comment?: string;
+  images?: string[];
+}

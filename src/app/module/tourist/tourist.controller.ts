@@ -56,6 +56,48 @@ const createBooking = async (req: Request, res: Response) => {
   }
 };
 
+// const createReview = async (req: Request, res: Response) => {
+//   try {
+//     const user = req.user as RequestUser;
+//     const { bookingId, rating, comment, images } = req.body;
+
+//     if (!user) {
+//       throw new AppError(httpStatus.UNAUTHORIZED, "User not authenticated");
+//     }
+
+//     if (!bookingId || !rating) {
+//       throw new AppError(
+//         httpStatus.BAD_REQUEST,
+//         "bookingId and rating are required"
+//       );
+//     }
+
+//     const result = await TouristService.createReview(user.userId, {
+//       bookingId,
+//       rating: parseInt(rating),
+//       comment,
+//       images,
+//     });
+
+//     res.status(httpStatus.CREATED).json({
+//       success: true,
+//       message: "Review submitted successfully",
+//       data: result,
+//     });
+//   } catch (error: any) {
+//     if (error instanceof AppError) {
+//       res.status(error.statusCode).json({
+//         success: false,
+//         message: error.message,
+//       });
+//     } else {
+//       res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+//         success: false,
+//         message: error.message || "Something went wrong",
+//       });
+//     }
+//   }
+// };
 const createReview = async (req: Request, res: Response) => {
   try {
     const user = req.user as RequestUser;
@@ -98,6 +140,7 @@ const createReview = async (req: Request, res: Response) => {
     }
   }
 };
+
 
 const cancelBooking = async (req: Request, res: Response) => {
   try {
