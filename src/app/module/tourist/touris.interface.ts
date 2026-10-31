@@ -18,6 +18,7 @@ export interface ICreateBooking {
 }
 
 export interface ICreateReview {
+  bookingId: string; 
   packageId: string;
   rating: number;
   comment?: string;
@@ -109,3 +110,5 @@ export interface IAvailableOnlyQuery {
   packageId?: string;
   guideId?: string;
 }
+
+
