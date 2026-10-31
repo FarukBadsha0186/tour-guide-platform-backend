@@ -9,10 +9,10 @@
       "maxDuration": 30
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/dist/server.js"
+      "src": "/(.*)",
+      "dest": "/dist/server.js"
     }
   ]
 }
